@@ -1,6 +1,8 @@
 # ide-php
 ## Minimal browser based IDE deployed as a single PHP file!
 
+__NOTE: this project is not ready for production use yet!__
+
 Sometimes you have to work without your development environment.
 May be you are traveling, may be you are on a different computer.
 Setting up your development environment on a new machine is a big pain.
