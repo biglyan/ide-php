@@ -45,6 +45,7 @@ if (isset($_GET["download"])) {
 <html lang="en">
 <head>
 <title>ide.js</title>
+<link id="favicon" rel="shortcut icon" type="image/png" href="?png=<?=$app?>.png" />
 <link href="?css" rel="stylesheet">
 <script src='?js'></script>
 </head>
@@ -86,7 +87,7 @@ if (isset($_GET["download"])) {
 
 <script>
 
-apiUrl = "<?=WEB_URL?>";
+apiUrl = "<?=WEB_URL?>";    
 
 requirejs.config({
     appDir: ".",
