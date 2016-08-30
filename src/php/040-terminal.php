@@ -1,15 +1,6 @@
 <?php
 
-require_once('websockets.php');
-
-$proc = proc_open(TERMINAL_COMMAND, array(
-	0 => array("pipe", "r"),
-	1 => array("pipe", "w"),
-	2 => array("pipe", "w")
-), $pipes);
-stream_set_blocking($pipes[0], 0);
-stream_set_blocking($pipes[1], 0);
-stream_set_blocking($pipes[2], 0);
+$proc = nuLL;
 
 class TerminalServer extends WebSocketServer {
   
@@ -65,10 +56,21 @@ class TerminalServer extends WebSocketServer {
   protected function closed ($user) { }
 }
 
-$term = new TerminalServer(TERMINAL_HOST, TERMINAL_PORT);
-try {
-  $term->run();
-}
-catch (Exception $e) {
-  $term->stdout($e->getMessage());
+function run_terminal() {
+    $proc = proc_open(TERMINAL_COMMAND, array(
+      0 => array("pipe", "r"),
+      1 => array("pipe", "w"),
+      2 => array("pipe", "w")
+    ), $pipes);
+    stream_set_blocking($pipes[0], 0);
+    stream_set_blocking($pipes[1], 0);
+    stream_set_blocking($pipes[2], 0);
+
+    $term = new TerminalServer(TERMINAL_HOST, TERMINAL_PORT);
+    try {
+      $term->run();
+    }
+    catch (Exception $e) {
+      $term->stdout($e->getMessage());
+    }
 }
