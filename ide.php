@@ -57,16 +57,36 @@ function require_login() {
     }
 }
 
+function mime_type($filename) {
+    return trim(shell_exec("file -b --mime-type -m /usr/share/misc/magic " . escapeshellcmd($filename)));
+}
+
 function api_read($p) {
     require_login();
     $path = set_cwd(dirname($p->path));
-    return array("contents" => file_get_contents(basename($p->path)));
+    $file = basename($p->path);
+    return array("contents" => file_exists($file)? file_get_contents($file) : "");
 }
 
 function api_write($p) {
     require_login();
     $path = set_cwd(dirname($p->path));
     file_put_contents(basename($p->path), $p->content);
+    return null;
+}
+
+function api_write_data_url($p) {
+    require_login();
+    $path = set_cwd(dirname($p->path));
+    $content = base64_decode(substr($p->content, strpos($p->content, ',')));
+    file_put_contents(basename($p->path), $content);
+    return null;
+}
+
+function api_delete($p) {
+    require_login();
+    $path = set_cwd(dirname($p->path));
+    unlink($p->path);
     return null;
 }
 
@@ -137,7 +157,14 @@ if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 $app = "browser";
 $path = ".";
 
-if (isset($_GET["browser"])) {
+if (isset($_GET["download"])) {
+    $downloadPath = $_GET["download"];
+    set_cwd(dirname($downloadPath));
+    $filename = basename($downloadPath);
+    header("Content-Type: " . mime_type($filename));
+    echo file_get_contents($filename);
+    die;
+} else if (isset($_GET["browser"])) {
     $app = "browser";
     $path = $_GET["browser"];
 } else if (isset($_GET["editor"])) {
@@ -162,9 +189,18 @@ if (isset($_GET["browser"])) {
 
 <div class="toolbar">
 <? if ($app == "browser") { ?>
+    <button id="home">Home</button>
+    <button id="newfile">New File</button>
     <button id="upload">Upload</button>
+    <input type="file" id="file" style="display:none"/>
 <? } else if ($app == "editor") { ?>
-    <button id="save">save</button>
+    <button id="save">Save</button>
+    <input id="searchtext" placeholder="Search..."/>
+    <button id="findnext">Find Next</button>
+    <input id="replacetext" placeholder="Replace..."/>
+    <button id="replacenext">Replace Next</button>
+    <button id="replaceall">Replace All</button>
+    <button id="goto">Go To Line</button>
 <? } else if ($app == "console") { ?>
 <? } ?>
 </div>
@@ -172,17 +208,11 @@ if (isset($_GET["browser"])) {
 
 <div class="content">
 <? if ($app == "browser") { ?>
-    
-    <div class="browser" id="browser"></div>
-
+    <table class="browser" id="browser"></table>
 <? } else if ($app == "editor") { ?>
-
     <div class="editor" id="editor"></div>
-
 <? } else if ($app == "console") { ?>
-
     <div class="console" id="console"></div>
-
 <? } ?>
 </div>
 
