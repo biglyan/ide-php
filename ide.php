@@ -8923,7 +8923,7 @@ function api_terminal($p) {
     require_login();
     $ps = shell_exec("ps aux");
     if (strpos($ps, "php ide.php terminal") == false) {
-        $pid = shell_exec("nohup php ide.php terminal 2> /dev/null & echo $!");
+        exec('echo "nohup php ide.php terminal" | at now');
     }
     return array("url" => TERMINAL_WEBSOCKET_URL);
 }
