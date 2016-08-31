@@ -57,6 +57,7 @@ class TerminalServer extends WebSocketServer {
 }
 
 function run_terminal() {
+    global $proc, $pipes;
     $proc = proc_open(TERMINAL_COMMAND, array(
       0 => array("pipe", "r"),
       1 => array("pipe", "w"),

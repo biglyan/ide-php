@@ -59,6 +59,7 @@ if (isset($_GET["download"])) {
     <button id="home">Home</button>
     <button id="newfile">New File</button>
     <button id="upload">Upload</button>
+    <button id="logout">Logout</button>
     <input type="file" id="file" style="display:none"/>
 <? } else if ($app == "editor") { ?>
     <button id="save">Save</button>

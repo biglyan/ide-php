@@ -30,10 +30,14 @@ function app_editor(filePath) {
     $("#save").click(function() { 
         if (!filePath) { filePath = prompt("File path?"); }
         if (filePath) {
+            var $btn = $(this);
+            $btn.hide();
             api("write", {path: filePath, content: editor.getValue() })
             .then(function() {
                 setFileType(filePath);
-                alert("Saved!");
+                $btn.show();
+            }, function() {
+                $btn.show();
             });
         }
     });

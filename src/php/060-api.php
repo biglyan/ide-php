@@ -35,10 +35,11 @@ function api_browse($p) {
     $files = array();
     $folders = array();
     foreach($items as $item) {
+        $item_info = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => readable_filesize(filesize($item)));
         if (is_dir($item)) {
-            $folders[] = basename($item);
+            $folders[] = $item_info;
         } else {
-            $files[] = basename($item);
+            $files[] = $item_info;
         }
     }
     return array("path" => $path, "basename" => basename($path), "files" => $files, "folders" => $folders);

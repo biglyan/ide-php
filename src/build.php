@@ -3,7 +3,7 @@ ob_start();
 
 echo "<?php\n";
 
-foreach(glob("header/*.php") as $php) { 
+foreach(glob("cfg/*.php") as $php) { 
 	$f = fopen($php, "r");
 	fgets($f); // discard first line with <?php
 	while(!feof($f)) { echo fgets($f); } 

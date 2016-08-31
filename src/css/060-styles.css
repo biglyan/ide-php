@@ -32,7 +32,6 @@ html {
 }
 
 .browser {
-    padding: 10px;
     overflow-y: scroll;
     width: 100%;
 }
@@ -43,15 +42,26 @@ html {
        padding: 7px 10px;
 }
 .browser .browser-item:nth-child(2n+1) {
-    background: #eee;
+    background: #f3f3f3;
 }
 .browser .browser-item .buttons {
-    width: 50px; text-align: right;
+    width: 60px;
+    text-align: right;
 }
-.browser .browser-item img {
-    width: 20px;
+.browser .browser-item .buttons img {
+    width: 25px;
 }
-.browser .folder-item {
+.browser .browser-item .size {
+    text-align: right;
+    font-size: 0.8rem;
+    width: 80px;
+}
+.browser .browser-item .modified {
+    text-align: right;
+    font-size: 0.8rem;
+    width: 150px;
+}
+.browser .folder-item .name {
     font-weight: bold;
 }
 .browser .file-item {
