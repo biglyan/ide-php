@@ -14,7 +14,7 @@ function app_browser(openPath) {
             var html = '\
             <tr class="browser-item folder-item">\
                 <td class="name">..</td>\
-                <td></td><td></td>\
+                <td class="size">Size</td><td class="modified">Modified</td>\
                 <td class="buttons">\
                     <a target="_blank" href="?console=."><img src="?png=console.png"/></a>\
                 </td>\
@@ -40,7 +40,7 @@ function app_browser(openPath) {
                     <td class="size">' + file.size + '</td>\
                     <td class="modified">' + file.modified + '</td>\
                     <td class="buttons">\
-                        <a target="_blank" href="?editor=' + path + '/' + file.name + '"><img src="?png=editor.png"/></a>\
+                        <a target="_blank" href="?download=' + path + '/' + file.name + '"><img src="?png=download.png"/></a>\
                         <a href="#" onclick="if (confirm(\'Are you sure?\')) api(\'delete\', {path: \'' + path + '/' + file.name + '\'}).then(browseTo.bind(null, \'' + path + '\'))"><img src="?png=delete.png"/></a>\
                     </td>\
                 </tr>';
@@ -57,7 +57,7 @@ function app_browser(openPath) {
             $browser.find('.file-item .name').click(function() {
                 var filePath = path + "/" + $(this).text();
                 console.log(filePath);
-                window.open("?download="+filePath, "_blank");
+                window.open("?editor="+filePath, "_blank");
             });
 
         });

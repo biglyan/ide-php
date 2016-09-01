@@ -90,17 +90,17 @@ if (isset($_GET["download"])) {
 
 apiUrl = "<?=WEB_URL?>";    
 
-requirejs.config({
+/*requirejs.config({
     appDir: ".",
     baseUrl: "https://cdnjs.cloudflare.com/ajax/libs/",
-    paths: { jquery: ['jquery/3.1.0/jquery'], 'ace': ['ace/1.2.5/ace'] }
+    paths: { 'ace': ['ace/1.2.5/ace'] }
 });
 
-require(['jquery', 'ace'], function($) {
-    window.$ = $;
-    setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 100);
+require(['ace'], function() {
+    setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
 });
-
+*/
+setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
 </script>
 
 </body>

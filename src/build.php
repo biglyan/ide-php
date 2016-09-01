@@ -15,6 +15,7 @@ foreach(glob("css/*.css") as $css) { readfile($css); }
 echo "<"."? die; }\n";
 
 echo 'if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?'.'>';
+foreach(glob("js/lib/*.js") as $js) { readfile($js); echo ";"; }
 foreach(glob("js/*.js") as $js) { readfile($js); echo ";"; }
 echo "<"."? die; }\n";
 
