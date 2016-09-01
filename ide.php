@@ -2,7 +2,7 @@
 // ide-php settings, modify for your use.
 define("WORKING_DIRECTORY", ".");
 define("WEB_URL", "http://localhost:9000/ide.php");
-define("TERMINAL_HOST", "0.0.0.0");
+define("TERMINAL_IP", "0.0.0.0");
 define("TERMINAL_PORT", "9001");
 define("TERMINAL_COMMAND", "/bin/sh -i");
 define("TERMINAL_WEBSOCKET_URL", "ws://localhost:9001");
@@ -8061,7 +8061,6 @@ if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?>/**
         if (filePath) {
             var $btn = $(this);
             $btn.hide();
-            setTimeout(function() {
             api("write", {path: filePath, content: editor.getValue() })
             .then(function() {
                 setFileType(filePath);
@@ -8069,7 +8068,6 @@ if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?>/**
             }, function() {
                 $btn.show();
             });
-            }, 1000);
         }
     });
 
@@ -8846,7 +8844,7 @@ function run_terminal() {
     stream_set_blocking($pipes[1], 0);
     stream_set_blocking($pipes[2], 0);
 
-    $term = new TerminalServer(TERMINAL_HOST, TERMINAL_PORT);
+    $term = new TerminalServer(TERMINAL_IP, TERMINAL_PORT);
     try {
       $term->run();
     }
@@ -8910,7 +8908,12 @@ function readable_filesize($bytes, $decimals = 2) {
     $factor = floor((strlen($bytes) - 1) / 3);
     return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];
 }
-function api_read($p) {
+
+function daemonize($cmd) {
+    pclose(popen('nohup ' . $cmd . ' &', 'r'));
+    //$cmd = 'bash -c "exec nohup ' . $cmd . ' > /dev/null 2>&1 &"';
+    //exec($cmd);
+}function api_read($p) {
     require_login();
     $path = set_cwd(dirname($p->path));
     $file = basename($p->path);
@@ -8958,9 +8961,9 @@ function api_browse($p) {
 
 function api_terminal($p) {
     require_login();
-    $ps = shell_exec("ps aux");
-    if (strpos($ps, "php ide.php terminal") == false) {
-        exec('echo "nohup php ide.php terminal" | at now');
+    $cmd = "php ide.php terminal " . TERMINAL_IP . ":" . TERMINAL_PORT;
+    if (strpos(shell_exec("ps aux"), $cmd) == false) {
+        daemonize($cmd);
     }
     return array("url" => TERMINAL_WEBSOCKET_URL);
 }

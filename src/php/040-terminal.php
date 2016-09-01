@@ -67,7 +67,7 @@ function run_terminal() {
     stream_set_blocking($pipes[1], 0);
     stream_set_blocking($pipes[2], 0);
 
-    $term = new TerminalServer(TERMINAL_HOST, TERMINAL_PORT);
+    $term = new TerminalServer(TERMINAL_IP, TERMINAL_PORT);
     try {
       $term->run();
     }

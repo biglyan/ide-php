@@ -47,9 +47,9 @@ function api_browse($p) {
 
 function api_terminal($p) {
     require_login();
-    $ps = shell_exec("ps aux");
-    if (strpos($ps, "php ide.php terminal") == false) {
-        exec('echo "nohup php ide.php terminal" | at now');
+    $cmd = "php ide.php terminal " . TERMINAL_IP . ":" . TERMINAL_PORT;
+    if (strpos(shell_exec("ps aux"), $cmd) == false) {
+        daemonize($cmd);
     }
     return array("url" => TERMINAL_WEBSOCKET_URL);
 }
