@@ -55,3 +55,12 @@ function readable_filesize($bytes, $decimals = 2) {
     $factor = floor((strlen($bytes) - 1) / 3);
     return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];
 }
+
+function daemonize($cmd) {
+    $uname == php_uname('s');
+    if ($uname == "Darwin") {
+        pclose(popen('nohup ' . $cmd . ' &', 'r'));
+    } else {
+        exec('bash -c "exec nohup ' . $cmd . ' > /dev/null 2>&1 &"');
+    }
+}
