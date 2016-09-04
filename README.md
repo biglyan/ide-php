@@ -47,7 +47,7 @@ define("WEB_URL", "https://example.com/ide.php");
 define("TERMINAL_IP", "127.0.0.1");
 define("TERMINAL_PORT", "9009");
 define("TERMINAL_COMMAND", "/bin/sh -i");
-define("TERMINAL_WEBSOCKET_URL", "wss://example.com:443/ide.terminal");
+define("TERMINAL_WEBSOCKET_URL", "wss://example.com:443/ide.websocket");
 define("TERMINAL_FIX_CRLF", true);
 define("ENCRYPTION_KEY", "6UQkyq8wtb09gDRLoVrig7dFneJE00b3"); // CHANGE THIS!
 define("ENCRYPTION_SALT", "VrigO7WneJE00b36UQkyTrftb09gDRLo"); // CHANGE THIS!
