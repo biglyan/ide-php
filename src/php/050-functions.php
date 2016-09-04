@@ -61,6 +61,6 @@ function daemonize($cmd) {
     if ($uname == "Darwin") {
         pclose(popen('nohup ' . $cmd . ' &', 'r'));
     } else {
-        exec('bash -c "exec nohup ' . $cmd . ' > /dev/null 2>&1 &"');
+        exec('sh -c "exec nohup ' . $cmd . ' > /dev/null 2>&1 &"');
     }
 }

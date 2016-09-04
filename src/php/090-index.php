@@ -2,7 +2,11 @@
 
 if (php_sapi_name() == "cli") { 
     if ($argv[1] == "password") {
-        file_put_contents(".passwd", password_hash($argv[2], PASSWORD_DEFAULT));
+        echo "Please enter new password: ";
+        $passwd = fgets(STDIN);
+        if ($passwd == null || strlen($passwd) == 0) { echo "Please enter a password."; die; }
+        file_put_contents(".passwd", password_hash($passwd, PASSWORD_DEFAULT));
+        echo "Password set.";
     } else if ($argv[1] == "terminal") {
         run_terminal();
     }

@@ -1,2 +1,5 @@
 .cookie
 .passwd
+ide.config.php
+*.log
+
