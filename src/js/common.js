@@ -10,10 +10,18 @@ function api(cmd, data, deferred) {
             result = result? result : {};
             if (result.error) {
                 if (result.error == "NOT_LOGGED_IN") {
-                    api("login", {password: prompt("Please enter your password.")})
-                    .then(function() {
-                        api(cmd, data, d);
-                    });
+                    var password =  prompt("Please enter your password.");
+                    if (password) {
+                    	api("login", {password: password})
+                    	.then(function() {
+                            api(cmd, data, d);
+                        });
+                    } else {
+                        var msg = "API Error: " + result.error;
+                        console.error(msg);
+                        alert(msg);
+                        d.reject(msg);
+                    }
                 } else {
                     var msg = "API Error: " + result.error;
                     console.error(msg);

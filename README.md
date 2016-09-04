@@ -37,6 +37,7 @@ server {
    		proxy_set_header Upgrade websocket;
    	    proxy_set_header Connection upgrade;
    	}
+}
 ```
 and here is the corresponding ide.config.php file:
 ```

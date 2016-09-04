@@ -35,11 +35,10 @@ function api_browse($p) {
     $files = array();
     $folders = array();
     foreach($items as $item) {
-        $item_info = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => readable_filesize(filesize($item)));
         if (is_dir($item)) {
-            $folders[] = $item_info;
+            $folders[] = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => "");
         } else {
-            $files[] = $item_info;
+            $files[] = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => readable_filesize(filesize($item)));
         }
     }
     return array("path" => $path, "basename" => basename($path), "files" => $files, "folders" => $folders);
@@ -55,7 +54,9 @@ function api_terminal($p) {
 }
 
 function api_login($p) {
-    if (password_verify($p->password, file_get_contents(".passwd"))) {
+    $passhash = file_get_contents(".passwd");
+    //return array("p" => $pass, "h" => $passhash);
+    if (password_verify($p->password, $passhash)) {
         $time = time();
         $clientInfo = $_SERVER["REMOTE_ADDR"] . $_SERVER["HTTP_USER_AGENT"];
         $hash = sha1($time . $clientInfo . ENCRYPTION_SALT);

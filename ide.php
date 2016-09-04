@@ -63811,10 +63811,18 @@ function api(cmd, data, deferred) {
             result = result? result : {};
             if (result.error) {
                 if (result.error == "NOT_LOGGED_IN") {
-                    api("login", {password: prompt("Please enter your password.")})
-                    .then(function() {
-                        api(cmd, data, d);
-                    });
+                    var password =  prompt("Please enter your password.");
+                    if (password) {
+                    	api("login", {password: password})
+                    	.then(function() {
+                            api(cmd, data, d);
+                        });
+                    } else {
+                        var msg = "API Error: " + result.error;
+                        console.error(msg);
+                        alert(msg);
+                        d.reject(msg);
+                    }
                 } else {
                     var msg = "API Error: " + result.error;
                     console.error(msg);
@@ -63831,7 +63839,8 @@ function api(cmd, data, deferred) {
             d.reject(msg);
         });
     return d;
-};<? die; }
+}
+;<? die; }
 if (isset($_GET["png"])) { 
 	header("Content-Type: image/png"); 
 	switch ($_GET["png"]) {
@@ -64666,11 +64675,10 @@ function api_browse($p) {
     $files = array();
     $folders = array();
     foreach($items as $item) {
-        $item_info = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => readable_filesize(filesize($item)));
         if (is_dir($item)) {
-            $folders[] = $item_info;
+            $folders[] = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => "");
         } else {
-            $files[] = $item_info;
+            $files[] = array("name" => basename($item), "modified" => date ("d-m-Y H:i:s", filemtime($item)), "size" => readable_filesize(filesize($item)));
         }
     }
     return array("path" => $path, "basename" => basename($path), "files" => $files, "folders" => $folders);
@@ -64686,7 +64694,9 @@ function api_terminal($p) {
 }
 
 function api_login($p) {
-    if (password_verify($p->password, file_get_contents(".passwd"))) {
+    $passhash = file_get_contents(".passwd");
+    //return array("p" => $pass, "h" => $passhash);
+    if (password_verify($p->password, $passhash)) {
         $time = time();
         $clientInfo = $_SERVER["REMOTE_ADDR"] . $_SERVER["HTTP_USER_AGENT"];
         $hash = sha1($time . $clientInfo . ENCRYPTION_SALT);
@@ -64707,10 +64717,10 @@ function api_logout($p) {
 if (php_sapi_name() == "cli") { 
     if ($argv[1] == "password") {
         echo "Please enter new password: ";
-        $passwd = fgets(STDIN);
+        $passwd = trim(fgets(STDIN));
         if ($passwd == null || strlen($passwd) == 0) { echo "Please enter a password."; die; }
         file_put_contents(".passwd", password_hash($passwd, PASSWORD_DEFAULT));
-        echo "Password set.";
+        echo "Password set.\n";
     } else if ($argv[1] == "terminal") {
         run_terminal();
     }
@@ -64762,14 +64772,19 @@ if (isset($_GET["download"])) {
 <div class="container">
 
 
-<div class="toolbar">
 <? if ($app == "browser") { ?>
+<div class="toolbar">
     <button id="home">Home</button>
     <button id="newfile">New File</button>
     <button id="upload">Upload</button>
     <button id="logout">Logout</button>
     <input type="file" id="file" style="display:none"/>
+</div>
+<div class="content">
+    <table class="browser" id="browser"></table>
+</div>
 <? } else if ($app == "editor") { ?>
+<div class="toolbar">
     <button id="save">Save</button>
     <input id="searchtext" placeholder="Search..."/>
     <button id="findnext">Find Next</button>
@@ -64777,20 +64792,13 @@ if (isset($_GET["download"])) {
     <button id="replacenext">Replace Next</button>
     <button id="replaceall">Replace All</button>
     <button id="goto">Go To Line</button>
-<? } else if ($app == "console") { ?>
-<? } ?>
 </div>
-
-
 <div class="content">
-<? if ($app == "browser") { ?>
-    <table class="browser" id="browser"></table>
-<? } else if ($app == "editor") { ?>
     <div class="editor" id="editor"></div>
-<? } else if ($app == "console") { ?>
-    <div class="console" id="console"></div>
-<? } ?>
 </div>
+<? } else if ($app == "console") { ?>
+<div class="console" id="console"></div>
+<? } ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.js"></script>
 
