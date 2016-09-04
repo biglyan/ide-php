@@ -17,6 +17,12 @@ Installation should be as easy as it gets;
 
 and you are ready to go!
 
+## Screenshots
+![Alt text](https://github.com/turerkan/ide-php/raw/master/screenshots/sc1.png "Screenshot 1")
+![Alt text](https://github.com/turerkan/ide-php/raw/master/screenshots/sc2.png "Screenshot 2")
+![Alt text](https://github.com/turerkan/ide-php/raw/master/screenshots/sc3.png "Screenshot 3")
+
+## Heads Up
 For your own safety please host ide.php behind a reverse proxy like nginx or apache. Allow access only from HTTPS. Do not forget to proxy the WebSocket Server
 through HTTPS. Here is a nginx configuration example:
 ```
