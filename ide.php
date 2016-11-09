@@ -29,7 +29,7 @@ define("TERMINAL_WEBSOCKET_URL", "ws://localhost:9001");
 define("TERMINAL_FIX_CRLF", true);
 define("ENCRYPTION_KEY", "6UQkyq8wtb09gDRLoVrigO7WneJE00b3"); // CHANGE THIS!
 define("ENCRYPTION_SALT", "VrigO7WneJE00b36UQkyq8wtb09gDRLo"); // CHANGE THIS!
-date_default_timezone_set("Europe/Istanbul");');
+date_default_timezone_set("PRC");');
 }
 define("INCLUDE_CONFIG", true);
 require("ide.config.php");
@@ -2279,7 +2279,7 @@ html {
 .terminal .xterm-bg-color-255 {
     background-color: #eeeeee;
 }
-<? die; }
+<?php die; }
 if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?>/* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -57967,6 +57967,200 @@ oop.inherits(Mode, TextMode);
 exports.Mode = Mode;
 
 });
+;/*
+ * Implements the attach method, that
+ * attaches the terminal to a WebSocket stream.
+ *
+ * The bidirectional argument indicates, whether the terminal should
+ * send data to the socket as well and is true, by default.
+ */
+
+(function (attach) {
+
+  attach(this.Xterm);
+
+})(function (Xterm) {
+  'use strict';
+
+  /**
+   * This module provides methods for attaching a terminal to a WebSocket
+   * stream.
+   *
+   * @module xterm/addons/attach/attach
+   */
+  var exports = {};
+
+  /**
+   * Attaches the given terminal to the given socket.
+   *
+   * @param {Xterm} term - The terminal to be attached to the given socket.
+   * @param {WebSocket} socket - The socket to attach the current terminal.
+   * @param {boolean} bidirectional - Whether the terminal should send data
+   *                                  to the socket as well.
+   * @param {boolean} buffered - Whether the rendering of incoming data
+   *                             should happen instantly or at a maximum
+   *                             frequency of 1 rendering per 10ms.
+   */
+  exports.attach = function (term, socket, bidirectional, buffered) {
+    bidirectional = (typeof bidirectional == 'undefined') ? true : bidirectional;
+    term.socket = socket;
+
+    term._flushBuffer = function () {
+      term.write(term._attachSocketBuffer);
+      term._attachSocketBuffer = null;
+      clearTimeout(term._attachSocketBufferTimer);
+      term._attachSocketBufferTimer = null;
+    };
+
+    term._pushToBuffer = function (data) {
+      if (term._attachSocketBuffer) {
+        term._attachSocketBuffer += data;
+      } else {
+        term._attachSocketBuffer = data;
+        setTimeout(term._flushBuffer, 10);
+      }
+    };
+
+    term._getMessage = function (ev) {
+      if (buffered) {
+        term._pushToBuffer(ev.data);
+      } else {
+        term.write(ev.data);
+      }
+    };
+
+    term._sendData = function (data) {
+      socket.send(data);
+    };
+
+    socket.addEventListener('message', term._getMessage);
+
+    if (bidirectional) {
+      term.on('data', term._sendData);
+    }
+
+    socket.addEventListener('close', term.detach.bind(term, socket));
+    socket.addEventListener('error', term.detach.bind(term, socket));
+  };
+
+  /**
+   * Detaches the given terminal from the given socket
+   *
+   * @param {Xterm} term - The terminal to be detached from the given socket.
+   * @param {WebSocket} socket - The socket from which to detach the current
+   *                             terminal.
+   */
+  exports.detach = function (term, socket) {
+    term.off('data', term._sendData);
+
+    socket = (typeof socket == 'undefined') ? term.socket : socket;
+
+    if (socket) {
+      socket.removeEventListener('message', term._getMessage);
+    }
+
+    delete term.socket;
+  };
+
+  /**
+   * Attaches the current terminal to the given socket
+   *
+   * @param {WebSocket} socket - The socket to attach the current terminal.
+   * @param {boolean} bidirectional - Whether the terminal should send data
+   *                                  to the socket as well.
+   * @param {boolean} buffered - Whether the rendering of incoming data
+   *                             should happen instantly or at a maximum
+   *                             frequency of 1 rendering per 10ms.
+   */
+  Xterm.prototype.attach = function (socket, bidirectional, buffered) {
+    return exports.attach(this, socket, bidirectional, buffered);
+  };
+
+  /**
+   * Detaches the current terminal from the given socket.
+   *
+   * @param {WebSocket} socket - The socket from which to detach the current
+   *                             terminal.
+   */
+  Xterm.prototype.detach = function (socket) {
+    return exports.detach(this, socket);
+  };
+
+  return exports;
+});
+;/*
+ *  Fit terminal columns and rows to the dimensions of its
+ *  DOM element.
+ *
+ *  Approach:
+ *    - Rows: Truncate the division of the terminal parent element height
+ *            by the terminal row height
+ *
+ *    - Columns: Truncate the division of the terminal parent element width by
+ *               the terminal character width (apply display: inline at the
+ *               terminal row and truncate its width with the current number
+ *               of columns)
+ */
+(function (fit) {
+  
+  fit(this.Xterm);
+
+})(function (Xterm) {
+  /**
+   * This module provides methods for fitting a terminal's size to a parent container.
+   *
+   * @module xterm/addons/fit/fit
+   */
+  var exports = {};
+
+  exports.proposeGeometry = function (term) {
+    var parentElementStyle = window.getComputedStyle(term.element.parentElement),
+        parentElementHeight = parseInt(parentElementStyle.getPropertyValue('height')),
+        parentElementWidth = parseInt(parentElementStyle.getPropertyValue('width')),
+        elementStyle = window.getComputedStyle(term.element),
+        elementPaddingVer = parseInt(elementStyle.getPropertyValue('padding-top')) + parseInt(elementStyle.getPropertyValue('padding-bottom')),
+        elementPaddingHor = parseInt(elementStyle.getPropertyValue('padding-right')) + parseInt(elementStyle.getPropertyValue('padding-left')),
+        availableHeight = parentElementHeight - elementPaddingVer,
+        availableWidth = parentElementWidth - elementPaddingHor,
+        container = term.rowContainer,
+        subjectRow = term.rowContainer.firstElementChild,
+        contentBuffer = subjectRow.innerHTML,
+        characterHeight,
+        rows,
+        characterWidth,
+        cols,
+        geometry;
+
+    subjectRow.style.display = 'inline';
+    subjectRow.innerHTML = 'W'; // Common character for measuring width, although on monospace
+    characterWidth = subjectRow.getBoundingClientRect().width;
+    subjectRow.style.display = ''; // Revert style before calculating height, since they differ.
+    characterHeight = parseInt(subjectRow.offsetHeight);
+    subjectRow.innerHTML = contentBuffer;
+
+    rows = parseInt(availableHeight / characterHeight);
+    cols = parseInt(availableWidth / characterWidth) - 1;
+
+    geometry = {cols: cols, rows: rows};
+    return geometry;
+  };
+
+  exports.fit = function (term) {
+    var geometry = exports.proposeGeometry(term);
+
+    term.resize(geometry.cols, geometry.rows);
+  };
+
+  Xterm.prototype.proposeGeometry = function () {
+    return exports.proposeGeometry(this);
+  };
+
+  Xterm.prototype.fit = function () {
+    return exports.fit(this);
+  };
+
+  return exports;
+});
 ;/**
  * xterm.js: xterm, in the browser
  * Copyright (c) 2014, sourceLair Limited (www.sourcelair.com (MIT License)
@@ -63401,200 +63595,6 @@ exports.Mode = Mode;
 
     return Terminal;
 });
-;/*
- * Implements the attach method, that
- * attaches the terminal to a WebSocket stream.
- *
- * The bidirectional argument indicates, whether the terminal should
- * send data to the socket as well and is true, by default.
- */
-
-(function (attach) {
-
-  attach(this.Xterm);
-
-})(function (Xterm) {
-  'use strict';
-
-  /**
-   * This module provides methods for attaching a terminal to a WebSocket
-   * stream.
-   *
-   * @module xterm/addons/attach/attach
-   */
-  var exports = {};
-
-  /**
-   * Attaches the given terminal to the given socket.
-   *
-   * @param {Xterm} term - The terminal to be attached to the given socket.
-   * @param {WebSocket} socket - The socket to attach the current terminal.
-   * @param {boolean} bidirectional - Whether the terminal should send data
-   *                                  to the socket as well.
-   * @param {boolean} buffered - Whether the rendering of incoming data
-   *                             should happen instantly or at a maximum
-   *                             frequency of 1 rendering per 10ms.
-   */
-  exports.attach = function (term, socket, bidirectional, buffered) {
-    bidirectional = (typeof bidirectional == 'undefined') ? true : bidirectional;
-    term.socket = socket;
-
-    term._flushBuffer = function () {
-      term.write(term._attachSocketBuffer);
-      term._attachSocketBuffer = null;
-      clearTimeout(term._attachSocketBufferTimer);
-      term._attachSocketBufferTimer = null;
-    };
-
-    term._pushToBuffer = function (data) {
-      if (term._attachSocketBuffer) {
-        term._attachSocketBuffer += data;
-      } else {
-        term._attachSocketBuffer = data;
-        setTimeout(term._flushBuffer, 10);
-      }
-    };
-
-    term._getMessage = function (ev) {
-      if (buffered) {
-        term._pushToBuffer(ev.data);
-      } else {
-        term.write(ev.data);
-      }
-    };
-
-    term._sendData = function (data) {
-      socket.send(data);
-    };
-
-    socket.addEventListener('message', term._getMessage);
-
-    if (bidirectional) {
-      term.on('data', term._sendData);
-    }
-
-    socket.addEventListener('close', term.detach.bind(term, socket));
-    socket.addEventListener('error', term.detach.bind(term, socket));
-  };
-
-  /**
-   * Detaches the given terminal from the given socket
-   *
-   * @param {Xterm} term - The terminal to be detached from the given socket.
-   * @param {WebSocket} socket - The socket from which to detach the current
-   *                             terminal.
-   */
-  exports.detach = function (term, socket) {
-    term.off('data', term._sendData);
-
-    socket = (typeof socket == 'undefined') ? term.socket : socket;
-
-    if (socket) {
-      socket.removeEventListener('message', term._getMessage);
-    }
-
-    delete term.socket;
-  };
-
-  /**
-   * Attaches the current terminal to the given socket
-   *
-   * @param {WebSocket} socket - The socket to attach the current terminal.
-   * @param {boolean} bidirectional - Whether the terminal should send data
-   *                                  to the socket as well.
-   * @param {boolean} buffered - Whether the rendering of incoming data
-   *                             should happen instantly or at a maximum
-   *                             frequency of 1 rendering per 10ms.
-   */
-  Xterm.prototype.attach = function (socket, bidirectional, buffered) {
-    return exports.attach(this, socket, bidirectional, buffered);
-  };
-
-  /**
-   * Detaches the current terminal from the given socket.
-   *
-   * @param {WebSocket} socket - The socket from which to detach the current
-   *                             terminal.
-   */
-  Xterm.prototype.detach = function (socket) {
-    return exports.detach(this, socket);
-  };
-
-  return exports;
-});
-;/*
- *  Fit terminal columns and rows to the dimensions of its
- *  DOM element.
- *
- *  Approach:
- *    - Rows: Truncate the division of the terminal parent element height
- *            by the terminal row height
- *
- *    - Columns: Truncate the division of the terminal parent element width by
- *               the terminal character width (apply display: inline at the
- *               terminal row and truncate its width with the current number
- *               of columns)
- */
-(function (fit) {
-  
-  fit(this.Xterm);
-
-})(function (Xterm) {
-  /**
-   * This module provides methods for fitting a terminal's size to a parent container.
-   *
-   * @module xterm/addons/fit/fit
-   */
-  var exports = {};
-
-  exports.proposeGeometry = function (term) {
-    var parentElementStyle = window.getComputedStyle(term.element.parentElement),
-        parentElementHeight = parseInt(parentElementStyle.getPropertyValue('height')),
-        parentElementWidth = parseInt(parentElementStyle.getPropertyValue('width')),
-        elementStyle = window.getComputedStyle(term.element),
-        elementPaddingVer = parseInt(elementStyle.getPropertyValue('padding-top')) + parseInt(elementStyle.getPropertyValue('padding-bottom')),
-        elementPaddingHor = parseInt(elementStyle.getPropertyValue('padding-right')) + parseInt(elementStyle.getPropertyValue('padding-left')),
-        availableHeight = parentElementHeight - elementPaddingVer,
-        availableWidth = parentElementWidth - elementPaddingHor,
-        container = term.rowContainer,
-        subjectRow = term.rowContainer.firstElementChild,
-        contentBuffer = subjectRow.innerHTML,
-        characterHeight,
-        rows,
-        characterWidth,
-        cols,
-        geometry;
-
-    subjectRow.style.display = 'inline';
-    subjectRow.innerHTML = 'W'; // Common character for measuring width, although on monospace
-    characterWidth = subjectRow.getBoundingClientRect().width;
-    subjectRow.style.display = ''; // Revert style before calculating height, since they differ.
-    characterHeight = parseInt(subjectRow.offsetHeight);
-    subjectRow.innerHTML = contentBuffer;
-
-    rows = parseInt(availableHeight / characterHeight);
-    cols = parseInt(availableWidth / characterWidth) - 1;
-
-    geometry = {cols: cols, rows: rows};
-    return geometry;
-  };
-
-  exports.fit = function (term) {
-    var geometry = exports.proposeGeometry(term);
-
-    term.resize(geometry.cols, geometry.rows);
-  };
-
-  Xterm.prototype.proposeGeometry = function () {
-    return exports.proposeGeometry(this);
-  };
-
-  Xterm.prototype.fit = function () {
-    return exports.fit(this);
-  };
-
-  return exports;
-});
 ;function app_browser(openPath) {
 
     var path = openPath? openPath : ".";
@@ -63840,7 +63840,7 @@ function api(cmd, data, deferred) {
         });
     return d;
 }
-;<? die; }
+;<?php die; }
 if (isset($_GET["png"])) { 
 	header("Content-Type: image/png"); 
 	switch ($_GET["png"]) {
@@ -63852,7 +63852,6 @@ case 'editor.png': echo base64_decode('iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOE
 } die; }
 
 class WebSocketUser {
-
   public $socket;
   public $id;
   public $cookie;
@@ -63874,7 +63873,6 @@ class WebSocketUser {
 }
 
 abstract class WebSocketServer {
-
   protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
   protected $maxBufferSize;        
   protected $master;
@@ -63888,14 +63886,12 @@ abstract class WebSocketServer {
 
   function __construct($addr, $port, $bufferLength = 2048) {
     $this->maxBufferSize = $bufferLength;
-    $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
+    $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP) or die("Failed: socket_create()");
     socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
-    socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
-    socket_listen($this->master,20)                               or die("Failed: socket_listen()");
+    socket_bind($this->master, $addr, $port) or die("Failed: socket_bind()");
+    socket_listen($this->master, 20) or die("Failed: socket_listen()");
     $this->sockets['m'] = $this->master;
     $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
-
-    
   }
 
   abstract protected function process($user,$message); // Called immediately when the data is recieved. 
@@ -63915,8 +63911,7 @@ abstract class WebSocketServer {
     if ($user->handshake) {
       $message = $this->frame($message,$user);
       $result = @socket_write($user->socket, $message, strlen($message));
-    }
-    else {
+    } else {
       // User has not yet performed their handshake.  Store for sending later.
       $holdingMessage = array('user' => $user, 'message' => $message);
       $this->heldMessages[] = $holdingMessage;
@@ -63960,25 +63955,22 @@ abstract class WebSocketServer {
       $write = $except = null;
       $this->_tick();
       $this->tick();
-      @socket_select($read,$write,$except,1);
+      @socket_select($read, $write, $except, 1);
       foreach ($read as $socket) {
         if ($socket == $this->master) {
           $client = socket_accept($socket);
           if ($client < 0) {
             $this->stderr("Failed: socket_accept()");
             continue;
-          } 
-          else {
+          } else {
             $this->connect($client);
             $this->stdout("Client connected. " . $client);
           }
-        } 
-        else {
+        } else {
           $numBytes = @socket_recv($socket, $buffer, $this->maxBufferSize, 0); 
           if ($numBytes === false) {
             $sockErrNo = socket_last_error($socket);
-            switch ($sockErrNo)
-            {
+            switch ($sockErrNo) {
               case 102: // ENETRESET    -- Network dropped connection because of reset
               case 103: // ECONNABORTED -- Software caused connection abort
               case 104: // ECONNRESET   -- Connection reset by peer
@@ -63989,32 +63981,26 @@ abstract class WebSocketServer {
               case 113: // EHOSTUNREACH -- No route to host
               case 121: // EREMOTEIO    -- Rempte I/O error -- Their hard drive just blew up.
               case 125: // ECANCELED    -- Operation canceled
-                
                 $this->stderr("Unusual disconnect on socket " . $socket);
                 $this->disconnect($socket, true, $sockErrNo); // disconnect before clearing error, in case someone with their own implementation wants to check for error conditions on the socket.
                 break;
               default:
-
                 $this->stderr('Socket error: ' . socket_strerror($sockErrNo));
             }
-            
-          }
-          elseif ($numBytes == 0) {
+          } elseif ($numBytes == 0) {
             $this->disconnect($socket);
             $this->stderr("Client disconnected. TCP connection lost: " . $socket);
-          } 
-          else {
+          } else {
             $user = $this->getUserBySocket($socket);
             if (!$user->handshake) {
               $tmp = str_replace("\r", '', $buffer);
               if (strpos($tmp, "\n\n") === false ) {
                 continue; // If the client has not finished sending the header, then wait before sending our upgrade response.
               }
-              $this->doHandshake($user,$buffer);
-            } 
-            else {
+              $this->doHandshake($user, $buffer);
+            } else {
               //split packet into frame and send it to deframe
-              $this->split_packet($numBytes,$buffer, $user);
+              $this->split_packet($numBytes, $buffer, $user);
             }
           }
         }
@@ -64032,7 +64018,6 @@ abstract class WebSocketServer {
 
   protected function disconnect($socket, $triggerClosed = true, $sockErrNo = null) {
     $disconnectedUser = $this->getUserBySocket($socket);
-    
     if ($disconnectedUser !== null) {
       unset($this->users[$disconnectedUser->id]);
         
@@ -64048,8 +64033,7 @@ abstract class WebSocketServer {
         $this->stdout("Client disconnected. ".$disconnectedUser->socket);
         $this->closed($disconnectedUser);
         socket_close($disconnectedUser->socket);
-      }
-      else {
+      } else {
         $message = $this->frame('', $disconnectedUser, 'close');
         @socket_write($disconnectedUser->socket, $message, strlen($message));
       }
@@ -64064,16 +64048,14 @@ abstract class WebSocketServer {
       if (strpos($line,":") !== false) {
         $header = explode(":",$line,2);
         $headers[strtolower(trim($header[0]))] = trim($header[1]);
-      }
-      elseif (stripos($line,"get ") !== false) {
+      } elseif (stripos($line,"get ") !== false) {
         preg_match("/GET (.*) HTTP/i", $buffer, $reqResource);
         $headers['get'] = trim($reqResource[1]);
       }
     }
     if (isset($headers['get'])) {
       $user->requestedResource = $headers['get'];
-    } 
-    else {
+    } else {
       // todo: fail the connection
       $handshakeResponse = "HTTP/1.1 405 Method Not Allowed\r\n\r\n";     
     }
@@ -64088,8 +64070,7 @@ abstract class WebSocketServer {
     }
     if (!isset($headers['sec-websocket-key'])) {
       $handshakeResponse = "HTTP/1.1 400 Bad Request";
-    } 
-    else {
+    } else {
 
     }
     if (!isset($headers['sec-websocket-version']) || strtolower($headers['sec-websocket-version']) != 13) {
@@ -64106,7 +64087,6 @@ abstract class WebSocketServer {
     }
 
     // Done verifying the _required_ headers and optionally required headers.
-
     if (isset($handshakeResponse)) {
       socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
       $this->disconnect($user->socket);
@@ -64173,12 +64153,14 @@ abstract class WebSocketServer {
   public function stdout($message) {
     if ($this->interactive) {
       echo "$message\n";
+      file_put_contents('ide.log', $message, FILE_APPEND);
     }
   }
 
   public function stderr($message) {
     if ($this->interactive) {
       echo "$message\n";
+      file_put_contents('ide.log', $message, FILE_APPEND);
     }
   }
 
@@ -64205,8 +64187,7 @@ abstract class WebSocketServer {
     }
     if ($messageContinues) {
       $user->sendingContinuous = true;
-    } 
-    else {
+    } else {
       $b1 += 128;
       $user->sendingContinuous = false;
     }
@@ -64215,8 +64196,7 @@ abstract class WebSocketServer {
     $lengthField = "";
     if ($length < 126) {
       $b2 = $length;
-    } 
-    elseif ($length < 65536) {
+    } elseif ($length < 65536) {
       $b2 = 126;
       $hexLength = dechex($length);
       //$this->stdout("Hex Length: $hexLength");
@@ -64224,15 +64204,13 @@ abstract class WebSocketServer {
         $hexLength = '0' . $hexLength;
       } 
       $n = strlen($hexLength) - 2;
-
       for ($i = $n; $i >= 0; $i=$i-2) {
         $lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
       }
       while (strlen($lengthField) < 2) {
         $lengthField = chr(0) . $lengthField;
       }
-    } 
-    else {
+    } else {
       $b2 = 127;
       $hexLength = dechex($length);
       if (strlen($hexLength)%2 == 1) {
@@ -64270,7 +64248,6 @@ abstract class WebSocketServer {
       
       //split frame from packet and process it
       $frame=substr($fullpacket,$frame_pos,$framesize);
-
       if (($message = $this->deframe($frame, $user,$headers)) !== FALSE) {
         if ($user->hasSentClose) {
           $this->disconnect($user->socket);
@@ -64334,7 +64311,6 @@ abstract class WebSocketServer {
       return $this->deframe($message, $user);
     }
     */
-    
     if ($this->checkRSVBits($headers,$user)) {
       return false;
     }
@@ -64345,7 +64321,6 @@ abstract class WebSocketServer {
     }
 
     $payload = $user->partialMessage . $this->extractPayload($message,$headers);
-
     if ($pongReply) {
       $reply = $this->frame($payload,$user,'pong');
       socket_write($user->socket,$reply,strlen($reply));
@@ -64358,7 +64333,6 @@ abstract class WebSocketServer {
     }
 
     $payload = $this->applyMask($headers,$payload);
-
     if ($headers['fin']) {
       $user->partialMessage = "";
       return $payload;
@@ -64368,7 +64342,8 @@ abstract class WebSocketServer {
   }
 
   protected function extractHeaders($message) {
-    $header = array('fin'     => $message[0] & chr(128),
+    $header = array(
+            'fin'     => $message[0] & chr(128),
             'rsv1'    => $message[0] & chr(64),
             'rsv2'    => $message[0] & chr(32),
             'rsv3'    => $message[0] & chr(16),
@@ -64384,8 +64359,7 @@ abstract class WebSocketServer {
       }
       $header['length'] = ord($message[2]) * 256 
                 + ord($message[3]);
-    } 
-    elseif ($header['length'] == 127) {
+    } elseif ($header['length'] == 127) {
       if ($header['hasmask']) {
         $header['mask'] = $message[10] . $message[11] . $message[12] . $message[13];
       }
@@ -64397,8 +64371,7 @@ abstract class WebSocketServer {
                 + ord($message[7]) * 65536 
                 + ord($message[8]) * 256
                 + ord($message[9]);
-    } 
-    elseif ($header['hasmask']) {
+    } elseif ($header['hasmask']) {
       $header['mask'] = $message[2] . $message[3] . $message[4] . $message[5];
     }
     //echo $this->strtohex($message);
@@ -64413,8 +64386,7 @@ abstract class WebSocketServer {
     }
     if ($headers['length'] > 65535) {
       $offset += 8;
-    } 
-    elseif ($headers['length'] > 125) {
+    } elseif ($headers['length'] > 125) {
       $offset += 2;
     }
     return substr($message,$offset);
@@ -64424,8 +64396,7 @@ abstract class WebSocketServer {
     $effectiveMask = "";
     if ($headers['hasmask']) {
       $mask = $headers['mask'];
-    } 
-    else {
+    } else {
       return $payload;
     }
 
@@ -64471,12 +64442,9 @@ abstract class WebSocketServer {
     foreach ($headers as $key => $value) {
       if ($key == 'length' || $key == 'opcode') {
         echo "\t[$key] => $value\n\n";
-      } 
-      else {
+      } else {
         echo "\t[$key] => ".$this->strtohex($value)."\n";
-
       }
-
     }
     echo ")\n";
   }
@@ -64485,27 +64453,25 @@ abstract class WebSocketServer {
 $proc = nuLL;
 
 class TerminalServer extends WebSocketServer {
-  
   protected $maxBufferSize = 1048576;
-  
   protected function process($user, $msgt) {
   	global $pipes;
   	if ($user->cookie == null) {
   		$msg = json_decode($msgt);
-  		//file_put_contents("ide.log", "Attempting login with: " . $msgt, FILE_APPEND);
+      $this->stdout("Attempting login with: " . $msgt);
   		if (check_login($msg->ijst, $msg->ijsh, file_get_contents(".cookie"))) {
   			$user->cookie = $msg;
-            fwrite($pipes[0], "cd " . $msg->path ."\n");
-            //file_put_contents("ide.log", "Logged in.", FILE_APPEND);
+        fwrite($pipes[0], "cd " . $msg->path ."\n");
+        $this->stdout("Logged in.");
   		} else {
-  		    //file_put_contents("ide.log", "Bad login, disconnecting.", FILE_APPEND);
+  		  $this->stderr("Bad login, disconnecting.");
   			$this->disconnect($user->socket);
   		}
   	} else {
-  	    //file_put_contents("ide.log", "Recieved: " . $msgt, FILE_APPEND);
+  	  $this->stdout("Recieved: " . $msgt);
   		$wrote = fwrite($pipes[0], $msgt);
   		fflush($pipes[0]);
-  		//file_put_contents("ide.log", ($wrote === FALSE? "Couldn't write to pipe 1" : "Wrote: " . $wrote) , FILE_APPEND);
+  		$this->stdout($wrote === FALSE? "Couldn't write to pipe 1" : "Wrote: " . $wrote);
   	}
   }
 
@@ -64514,46 +64480,50 @@ class TerminalServer extends WebSocketServer {
 
   	$output = fread($pipes[1], 4096);
   	if ($output === FALSE) {
-  	    //file_put_contents("ide.log", "read error on pipe 1: " . $output, FILE_APPEND);
+  	  $this->stderr("read error on pipe 1: " . $output);
   	} else if ($output != null) {
-  	    //file_put_contents("ide.log", "Got data on pipe 1: " . $output, FILE_APPEND);
+  	  $this->stdout("Got data on pipe 1: " . $output);
   		foreach($this->users as $user) {
   			if ($user->cookie) {
-                if (TERMINAL_FIX_CRLF) {
-                    $output = str_replace("\n", "\r\n", $output);
-                }
+          if (TERMINAL_FIX_CRLF) {
+            $output = str_replace("\n", "\r\n", $output);
+          }
   				$this->send($user, $output);
-  				//file_put_contents("ide.log", "Sent data.", FILE_APPEND);
+  				$this->stdout("Sent data.");
   			}
   		}
-  	}
+    } else {
+      $this->stdout("=");
+    }
 
   	$output = fread($pipes[2], 4096);
   	if ($output === FALSE) {
-  	    //file_put_contents("ide.log", "read error on pipe 2: " . $output, FILE_APPEND);
+  	  $this->stdout("read error on pipe 2: " . $output);
   	} else if ($output != null) {
-  	    //file_put_contents("ide.log", "Got data on pipe 2: " . $output, FILE_APPEND);
+  	  $this->stdout("Got data on pipe 2: " . $output);
   		foreach($this->users as $user) {
   			if ($user->cookie) {
-                if (TERMINAL_FIX_CRLF) {
-                    $output = str_replace("\n", "\r\n", $output);
-                }
+          if (TERMINAL_FIX_CRLF) {
+            $output = str_replace("\n", "\r\n", $output);
+          }
   				$this->send($user, $output);
-  				//file_put_contents("ide.log", "Sent data.", FILE_APPEND);
+  				$this->stdout("Sent data.");
   			}
   		}
   	} else {
-  	    //file_put_contents("ide.log", "=", FILE_APPEND);
+  	  $this->stdout("=");
   	}
-  	 if (feof($pipes[0]) || feof($pipes[1])) {
-  	     //file_put_contents("ide.log", "EOF for pipe 2.", FILE_APPEND);
-  	     die;
-  	 }
+    if (feof($pipes[0]) || feof($pipes[1])) {
+       $this->stdout("EOF for pipe 2.");
+       die;
+    }
   }
-  
-  protected function connected ($user) { }
-  
-  protected function closed ($user) { }
+  protected function connected ($user) {
+    $this->stdout($user->id.' -> the handshake response is sent to the client');
+  }
+  protected function closed ($user) {
+    $this->stdout($user->id.' -> the connection is closed');
+  }
 }
 
 function run_terminal() {
@@ -64566,12 +64536,10 @@ function run_terminal() {
     stream_set_blocking($pipes[0], 0);
     stream_set_blocking($pipes[1], 0);
     stream_set_blocking($pipes[2], 0);
-
     $term = new TerminalServer(TERMINAL_IP, TERMINAL_PORT);
     try {
       $term->run();
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
       $term->stdout($e->getMessage());
     }
 }
@@ -64639,11 +64607,12 @@ function daemonize($cmd) {
     } else {
         exec('sh -c "exec nohup ' . $cmd . ' > /dev/null 2>&1 &"');
     }
-}function api_read($p) {
+}
+function api_read($p) {
     require_login();
     $path = set_cwd(dirname($p->path));
     $file = basename($p->path);
-    return array("contents" => file_exists($file)? file_get_contents($file) : "");
+    return array("contents" => file_exists($file) ? file_get_contents($file) : "");
 }
 
 function api_write($p) {
@@ -64714,7 +64683,7 @@ function api_logout($p) {
     setcookie("ijst", null, $time - (60 * 60 * 24), "/", null, null, false);
 }
 
-if (php_sapi_name() == "cli") { 
+if (php_sapi_name() == "cli") {
     if ($argv[1] == "password") {
         echo "Please enter new password: ";
         $passwd = trim(fgets(STDIN));
@@ -64758,9 +64727,8 @@ if (isset($_GET["download"])) {
     $app = "console";
     $path = $_GET["console"];
 }
-
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <title>ide.js</title>
 <link id="favicon" rel="shortcut icon" type="image/png" href="?png=<?=$app?>.png" />
@@ -64768,16 +64736,13 @@ if (isset($_GET["download"])) {
 <script src='?js'></script>
 </head>
 <body>
-
 <div class="container">
-
-
 <? if ($app == "browser") { ?>
 <div class="toolbar">
-    <button id="home">Home</button>
-    <button id="newfile">New File</button>
-    <button id="upload">Upload</button>
-    <button id="logout">Logout</button>
+    <button id="home">首页</button>
+    <button id="newfile">新建文件</button>
+    <button id="upload">上传</button>
+    <button id="logout">退出</button>
     <input type="file" id="file" style="display:none"/>
 </div>
 <div class="content">
@@ -64785,13 +64750,13 @@ if (isset($_GET["download"])) {
 </div>
 <? } else if ($app == "editor") { ?>
 <div class="toolbar">
-    <button id="save">Save</button>
-    <input id="searchtext" placeholder="Search..."/>
-    <button id="findnext">Find Next</button>
-    <input id="replacetext" placeholder="Replace..."/>
-    <button id="replacenext">Replace Next</button>
-    <button id="replaceall">Replace All</button>
-    <button id="goto">Go To Line</button>
+    <button id="save">保存</button>
+    <input id="searchtext" placeholder="查找..."/>
+    <button id="findnext">查找下一个</button>
+    <input id="replacetext" placeholder="替换..."/>
+    <button id="replacenext">替换下一个</button>
+    <button id="replaceall">替换所有</button>
+    <button id="goto">跳转</button>
 </div>
 <div class="content">
     <div class="editor" id="editor"></div>
@@ -64799,13 +64764,9 @@ if (isset($_GET["download"])) {
 <? } else if ($app == "console") { ?>
 <div class="console" id="console"></div>
 <? } ?>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.js"></script>
-
 <script>
-
-apiUrl = "<?=WEB_URL?>";    
-
+apiUrl = "<?=WEB_URL?>";
 /*requirejs.config({
     appDir: ".",
     baseUrl: "https://cdnjs.cloudflare.com/ajax/libs/",
@@ -64818,6 +64779,5 @@ require(['ace'], function() {
 */
 setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
 </script>
-
 </body>
 </html>

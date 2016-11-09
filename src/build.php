@@ -29,7 +29,7 @@ define("TERMINAL_WEBSOCKET_URL", "ws://localhost:9001");
 define("TERMINAL_FIX_CRLF", true);
 define("ENCRYPTION_KEY", "6UQkyq8wtb09gDRLoVrigO7WneJE00b3"); // CHANGE THIS!
 define("ENCRYPTION_SALT", "VrigO7WneJE00b36UQkyq8wtb09gDRLo"); // CHANGE THIS!
-date_default_timezone_set("Europe/Istanbul");');
+date_default_timezone_set("PRC");');
 }
 define("INCLUDE_CONFIG", true);
 require("ide.config.php");
@@ -37,12 +37,12 @@ require("ide.config.php");
 
 echo 'if (isset($_GET["css"])) { header("Content-Type: text/css"); ?'.'>';
 foreach(glob("src/css/*.css") as $css) { readfile($css); }
-echo "<"."? die; }\n";
+echo "<"."?php die; }\n";
 
 echo 'if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?'.'>';
 foreach(glob("src/js/lib/*.js") as $js) { readfile($js); echo ";"; }
 foreach(glob("src/js/*.js") as $js) { readfile($js); echo ";"; }
-echo "<"."? die; }\n";
+echo "<"."?php die; }\n";
 
 echo 'if (isset($_GET["png"])) { 
 	header("Content-Type: image/png"); 

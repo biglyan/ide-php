@@ -1,6 +1,6 @@
 <?php
 
-if (php_sapi_name() == "cli") { 
+if (php_sapi_name() == "cli") {
     if ($argv[1] == "password") {
         echo "Please enter new password: ";
         $passwd = trim(fgets(STDIN));
@@ -44,9 +44,8 @@ if (isset($_GET["download"])) {
     $app = "console";
     $path = $_GET["console"];
 }
-
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <title>ide.js</title>
 <link id="favicon" rel="shortcut icon" type="image/png" href="?png=<?=$app?>.png" />
@@ -54,16 +53,13 @@ if (isset($_GET["download"])) {
 <script src='?js'></script>
 </head>
 <body>
-
 <div class="container">
-
-
 <? if ($app == "browser") { ?>
 <div class="toolbar">
-    <button id="home">Home</button>
-    <button id="newfile">New File</button>
-    <button id="upload">Upload</button>
-    <button id="logout">Logout</button>
+    <button id="home">首页</button>
+    <button id="newfile">新建文件</button>
+    <button id="upload">上传</button>
+    <button id="logout">退出</button>
     <input type="file" id="file" style="display:none"/>
 </div>
 <div class="content">
@@ -71,13 +67,13 @@ if (isset($_GET["download"])) {
 </div>
 <? } else if ($app == "editor") { ?>
 <div class="toolbar">
-    <button id="save">Save</button>
-    <input id="searchtext" placeholder="Search..."/>
-    <button id="findnext">Find Next</button>
-    <input id="replacetext" placeholder="Replace..."/>
-    <button id="replacenext">Replace Next</button>
-    <button id="replaceall">Replace All</button>
-    <button id="goto">Go To Line</button>
+    <button id="save">保存</button>
+    <input id="searchtext" placeholder="查找..."/>
+    <button id="findnext">查找下一个</button>
+    <input id="replacetext" placeholder="替换..."/>
+    <button id="replacenext">替换下一个</button>
+    <button id="replaceall">替换所有</button>
+    <button id="goto">跳转</button>
 </div>
 <div class="content">
     <div class="editor" id="editor"></div>
@@ -85,13 +81,9 @@ if (isset($_GET["download"])) {
 <? } else if ($app == "console") { ?>
 <div class="console" id="console"></div>
 <? } ?>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.js"></script>
-
 <script>
-
-apiUrl = "<?=WEB_URL?>";    
-
+apiUrl = "<?=WEB_URL?>";
 /*requirejs.config({
     appDir: ".",
     baseUrl: "https://cdnjs.cloudflare.com/ajax/libs/",
@@ -104,6 +96,5 @@ require(['ace'], function() {
 */
 setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
 </script>
-
 </body>
 </html>

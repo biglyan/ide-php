@@ -3,7 +3,7 @@ function api_read($p) {
     require_login();
     $path = set_cwd(dirname($p->path));
     $file = basename($p->path);
-    return array("contents" => file_exists($file)? file_get_contents($file) : "");
+    return array("contents" => file_exists($file) ? file_get_contents($file) : "");
 }
 
 function api_write($p) {
