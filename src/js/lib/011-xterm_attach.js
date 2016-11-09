@@ -7,7 +7,6 @@
  */
 
 (function (attach) {
-
   attach(this.Xterm);
 
 })(function (Xterm) {
