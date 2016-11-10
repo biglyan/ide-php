@@ -65305,10 +65305,10 @@ class TerminalServer extends WebSocketServer {
 
   protected function poll() {
     global $pipes;
-
+    // stdout
     $output = fread($pipes[1], 4096);
     if ($output === FALSE) {
-      $this->stderr("read nothing on pipe 1");
+      $this->stderr("read error on pipe 1");
     } else if ($output != null) {
       $this->stdout("Got data on pipe 1: " . $output);
       foreach($this->users as $user) {
@@ -65321,12 +65321,13 @@ class TerminalServer extends WebSocketServer {
         }
       }
     } else {
-      $this->stdout("=");
+      //$this->stdout("=");
     }
 
+    // stderr
     $output = fread($pipes[2], 4096);
     if ($output === FALSE) {
-      $this->stdout("read nothing on pipe 2");
+      $this->stdout("read error on pipe 2");
     } else if ($output != null) {
       $this->stdout("Got data on pipe 2: " . $output);
       foreach($this->users as $user) {
@@ -65339,7 +65340,7 @@ class TerminalServer extends WebSocketServer {
         }
       }
     } else {
-      $this->stdout("=");
+      //$this->stdout("=");
     }
     if (feof($pipes[0]) || feof($pipes[1])) {
        $this->stdout("EOF for pipe 2.");
@@ -65354,12 +65355,41 @@ class TerminalServer extends WebSocketServer {
   }
 }
 
+class EchoServer extends WebSocketServer {
+  //protected $maxBufferSize = 1048576; //1MB... overkill for an echo server, but potentially plausible for other applications.
+
+  protected function process($user, $message) {
+    $this->send($user, $message);
+  }
+
+  protected function connected($user) {
+    // Do nothing: This is just an echo server, there's no need to track the user.
+    // However, if we did care about the users, we would probably have a cookie to
+    // parse at this step, would be looking them up in permanent storage, etc.
+  }
+
+  protected function closed($user) {
+    // Do nothing: This is where cleanup would go, in case the user had any sort of
+    // open files or other objects associated with them. This runs after the socket
+    // has been closed, so there is no need to clean up the socket itself here.
+  }
+}
+
+function run_echo() {
+  $echo = new EchoServer('0.0.0.0', '9000');
+  try {
+    $echo->run();
+  } catch (Exception $ex) {
+    $echo->stderr($ex->getMessage());
+  }
+}
+
 function run_terminal() {
     global $proc, $pipes;
     $proc = proc_open(TERMINAL_COMMAND, array(
-      0 => array("pty"),
-      1 => array("pty"),
-      2 => array("pty")
+      0 => array("pipe", "r"),
+      1 => array("pipe", "w"),
+      2 => array("pipe", "w")
     ), $pipes);
     stream_set_blocking($pipes[0], 0);
     stream_set_blocking($pipes[1], 0);
@@ -65368,7 +65398,7 @@ function run_terminal() {
     try {
       $term->run();
     } catch (Exception $e) {
-      $term->stdout($e->getMessage());
+      $term->stderr($e->getMessage());
     }
 }
 function success($r = null) {
@@ -65429,7 +65459,7 @@ function readable_filesize($bytes, $decimals = 2) {
 }
 
 function daemonize($cmd) {
-    $uname == php_uname('s');
+    $uname = php_uname('s');
     if ($uname == "Darwin") {
         pclose(popen('nohup ' . $cmd . ' &', 'r'));
     } else {
@@ -65472,7 +65502,7 @@ if (!function_exists('password_get_info')) {
 
 class PhpPasswordLib{
     CONST BLOWFISH_CHAR_RANGE = './0123456789ABCDEFGHIJKLMONPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    CONST BLOWFISH_CRYPT_SETTING = '$2a$'; 
+    CONST BLOWFISH_CRYPT_SETTING = '$2a$';
     CONST BLOWFISH_CRYPT_SETTING_ALT = '$2y$'; // Available from PHP 5.3.7
     CONST BLOWFISH_ROUNDS = 10;
     CONST BLOWFISH_NAME = 'bcrypt';
@@ -65490,7 +65520,7 @@ class PhpPasswordLib{
     CONST SHA512_NAME = 'sha512';
     /**
      * Default Crypt Algorithm
-     * 
+     *
      * @var INT
      */
     private $algorithm = PASSWORD_BCRYPT;
@@ -65504,36 +65534,36 @@ class PhpPasswordLib{
 
     /**
      * Setting for PHP Crypt function, defines algorithm
-     * 
+     *
      * Default setting is '$2a$' : BCrypt
-     * 
+     *
      * @var STRING
      */
     protected $cryptSetting;
 
     /**
      * Setting for PHP Crypt function, defines processing cost
-     * 
+     *
      * Default setting is '08$' for BCrypt rounds
-     * 
+     *
      * @var INT
      */
     protected $rounds;
 
     /**
      * Salt Character Count for Crypt Functions
-     * 
+     *
      * @var INT
      */
     protected $addSaltChars;
-    
+
     /**
      * Salt Character Range for Crypt Functions
-     * 
-     * @var STRING 
+     *
+     * @var STRING
      */
     protected $saltCharRange;
-    
+
     /**
      * Class Constructor
      */
@@ -65541,10 +65571,10 @@ class PhpPasswordLib{
         // Initialise default algorithm
         $this->setAlgorithm($this->algorithm);
     }
-    
+
     /**
      * Generate Crypt Password
-     * 
+     *
      * @param STRING $password The password to encode
      * @param ARRAY $options Cost value, and Salt if required
      * @param BOOL $debug If true will return time to calculate hash
@@ -65562,12 +65592,12 @@ class PhpPasswordLib{
         }
         return $crypt;
     }
-    
+
     /**
      * Generate Crypt Salt
-     * 
+     *
      * Generates a salt suitable for Crypt using the defined crypt settings
-     * 
+     *
      * @param STRING $salt Override random salt with predefined value
      * @return STRING
      */
@@ -65580,10 +65610,10 @@ class PhpPasswordLib{
         $salt = $this->cryptSetting.$this->rounds.$salt.'$';
         return $salt;
     }
-    
+
     /**
      * Set Crypt Setting
-     * 
+     *
      * @param type $setting
      * @return \Antnee\PhpPasswordLib\PhpPasswordLib
      */
@@ -65591,10 +65621,10 @@ class PhpPasswordLib{
         $this->cryptSetting = $setting;
         return $this;
     }
-    
+
     /**
      * Salt Character Count
-     * 
+     *
      * @param INT $count Number of characters to set
      * @return \Antnee\PhpPasswordLib\PhpPasswordLib|boolean
      */
@@ -65606,10 +65636,10 @@ class PhpPasswordLib{
             return FALSE;
         }
     }
-    
+
     /**
      * Salt Character Range
-     * 
+     *
      * @param STRING $chars
      * @return \Antnee\PhpPasswordLib\PhpPasswordLib|boolean
      */
@@ -65621,10 +65651,10 @@ class PhpPasswordLib{
             return FALSE;
         }
     }
-    
+
     /**
      * Set Crypt Algorithm
-     * 
+     *
      * @param INT $algo
      * @return \Antnee\PhpPasswordLib\PhpPasswordLib
      */
@@ -65663,12 +65693,12 @@ class PhpPasswordLib{
         }
         return $this;
     }
-    
+
     /**
      * Set Cost
-     * 
+     *
      * @todo implement
-     * 
+     *
      * @return \Antnee\PhpPasswordLib\PhpPasswordLib
      */
     public function setCost($rounds){
@@ -65683,14 +65713,14 @@ class PhpPasswordLib{
         }
         return $this;
     }
-    
+
     /**
      * Set Blowfish hash cost
-     * 
+     *
      * Minimum 4, maximum 31. Value is base-2 log of actual number of rounds, so
      * 4 = 16, 8 = 256, 16 = 65,536 and 31 = 2,147,483,648
      * Defaults to 8 if value is out of range or incorrect type
-     * 
+     *
      * @param int $rounds
      * @return STRING
      */
@@ -65700,13 +65730,13 @@ class PhpPasswordLib{
         }
         return sprintf("%02d", $rounds)."$";
     }
-    
+
     /**
      * Set SHA hash cost
-     * 
+     *
      * Minimum 1000, maximum 999,999,999
      * Defaults to 5000 if value is out of range or incorrect type
-     * 
+     *
      * @param INT $rounds
      * @return STRING
      */
@@ -65732,7 +65762,7 @@ class PhpPasswordLib{
     public function getInfo($hash){
         $params = explode("$", $hash);
         if (count($params) < 4) return FALSE;
-        
+
         switch ($params['1']){
             case '2a':
             case '2y':
@@ -65764,10 +65794,10 @@ class PhpPasswordLib{
 
     /**
      * Verify Crypt Setting
-     * 
+     *
      * Checks that the hash provided is encrypted at the current settings or not,
      * returning BOOL accordingly
-     * 
+     *
      * @param STRING $hash
      * @return BOOL
      */
@@ -65862,6 +65892,8 @@ if (php_sapi_name() == "cli") {
         echo "Password set.\n";
     } else if ($argv[1] == "terminal") {
         run_terminal();
+    } else if ($argv[1] == 'echo') {
+        run_echo();
     }
     die;
 }

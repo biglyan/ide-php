@@ -9,6 +9,8 @@ if (php_sapi_name() == "cli") {
         echo "Password set.\n";
     } else if ($argv[1] == "terminal") {
         run_terminal();
+    } else if ($argv[1] == 'echo') {
+        run_echo();
     }
     die;
 }
