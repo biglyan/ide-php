@@ -10,7 +10,7 @@ if (php_sapi_name() == "cli") {
     } else if ($argv[1] == "terminal") {
         run_terminal();
     }
-    die; 
+    die;
 }
 
 if ($_SERVER['REQUEST_METHOD'] != 'GET') {
@@ -54,7 +54,7 @@ if (isset($_GET["download"])) {
 </head>
 <body>
 <div class="container">
-<? if ($app == "browser") { ?>
+<?php if ($app == "browser") { ?>
 <div class="toolbar">
     <button id="home">首页</button>
     <button id="newfile">新建文件</button>
@@ -65,7 +65,7 @@ if (isset($_GET["download"])) {
 <div class="content">
     <table class="browser" id="browser"></table>
 </div>
-<? } else if ($app == "editor") { ?>
+<?php } else if ($app == "editor") { ?>
 <div class="toolbar">
     <button id="save">保存</button>
     <input id="searchtext" placeholder="查找..."/>
@@ -78,9 +78,9 @@ if (isset($_GET["download"])) {
 <div class="content">
     <div class="editor" id="editor"></div>
 </div>
-<? } else if ($app == "console") { ?>
+<?php } else if ($app == "console") { ?>
 <div class="console" id="console"></div>
-<? } ?>
+<?php } ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.js"></script>
 <script>
 apiUrl = "<?=WEB_URL?>";

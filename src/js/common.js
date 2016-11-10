@@ -10,22 +10,21 @@ function api(cmd, data, deferred) {
             result = result? result : {};
             if (result.error) {
                 if (result.error == "NOT_LOGGED_IN") {
-                    var password =  prompt("Please enter your password.");
+                  ui.prompt("Please enter your password.", function(password) {
                     if (password) {
-                    	api("login", {password: password})
-                    	.then(function() {
-                            api(cmd, data, d);
+                      api("login", {password: password})
+                        .then(function() {
+                          api(cmd, data, d);
                         });
                     } else {
                         var msg = "API Error: " + result.error;
-                        console.error(msg);
-                        alert(msg);
+                        ui.error(msg, 3000, false);
                         d.reject(msg);
                     }
+                  }, true);
                 } else {
                     var msg = "API Error: " + result.error;
-                    console.error(msg);
-                    alert(msg);
+                    ui.error(msg, 3000, false);
                     d.reject(msg);
                 }
             } else {
@@ -33,8 +32,7 @@ function api(cmd, data, deferred) {
             }
         }, function(xhr, status, err) {
             var msg = "AJAX Error: " + status + " " + xhr.responseText;
-            console.error(msg);
-            alert(msg);
+            ui.error(msg, 3000, false);
             d.reject(msg);
         });
     return d;

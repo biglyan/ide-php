@@ -1,20 +1,20 @@
 <?php
 function api_read($p) {
-    require_login();
+    require_login($p);
     $path = set_cwd(dirname($p->path));
     $file = basename($p->path);
     return array("contents" => file_exists($file) ? file_get_contents($file) : "");
 }
 
 function api_write($p) {
-    require_login();
+    require_login($p);
     $path = set_cwd(dirname($p->path));
     file_put_contents(basename($p->path), $p->content);
     return null;
 }
 
 function api_write_data_url($p) {
-    require_login();
+    require_login($p);
     $path = set_cwd(dirname($p->path));
     $content = base64_decode(substr($p->content, strpos($p->content, ',')));
     file_put_contents(basename($p->path), $content);
@@ -22,14 +22,14 @@ function api_write_data_url($p) {
 }
 
 function api_delete($p) {
-    require_login();
+    require_login($p);
     $path = set_cwd(dirname($p->path));
     unlink($p->path);
     return null;
 }
 
 function api_browse($p) {
-    require_login();
+    require_login($p);
     $path = set_cwd($p->path);
     $items =  glob("*");
     $files = array();
@@ -45,7 +45,7 @@ function api_browse($p) {
 }
 
 function api_terminal($p) {
-    require_login();
+    require_login($p);
     $cmd = "php ide.php terminal " . TERMINAL_IP . ":" . TERMINAL_PORT;
     if (strpos(shell_exec("ps aux"), $cmd) == false) {
         daemonize($cmd);
