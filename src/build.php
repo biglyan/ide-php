@@ -36,7 +36,7 @@ require("ide.config.php");
 <?php
 
 echo 'if (isset($_GET["css"])) { header("Content-Type: text/css"); ?'.'>';
-foreach(glob("src/css/*.css") as $css) { readfile($css); }
+foreach(glob("src/css/*.css") as $css) { echo preg_replace('~\\s*([:;{},])\\s*~', '\\1', preg_replace('~/\\*.*\\*/~sU', '', file_get_contents($css)));/*readfile($css);*/ }
 echo "<"."?php die; }\n";
 
 echo 'if (isset($_GET["js"])) { header("Content-Type: application/javascript"); ?'.'>';

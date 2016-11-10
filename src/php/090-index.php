@@ -83,19 +83,8 @@ if (isset($_GET["download"])) {
 <?php } else if ($app == "console") { ?>
 <div class="console" id="console"></div>
 <?php } ?>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.js"></script>
 <script>
 apiUrl = "<?=WEB_URL?>";
-/*requirejs.config({
-    appDir: ".",
-    baseUrl: "https://cdnjs.cloudflare.com/ajax/libs/",
-    paths: { 'ace': ['ace/1.2.5/ace'] }
-});
-
-require(['ace'], function() {
-    setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
-});
-*/
 setTimeout(app_<?=$app?>.bind(null, "<?=$path?>"), 1);
 </script>
 </body>
